@@ -16,6 +16,7 @@ A desktop app for monitoring printer supplies and tray status from a web dashboa
 
 - Python 3.10+ (tested on 3.12)
 - Tkinter available in your Python distribution
+- Install Tkinter
 
 No third-party Python dependencies are required to run from source.
 
