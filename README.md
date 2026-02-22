@@ -28,19 +28,7 @@ python3 main.py
 
 On first launch:
 1. Paste your monitor URL into the `Monitor URL` field.
-2. Click `Refresh Now`.
-
-## Minimal GitHub Upload (Source Run)
-
-If you only want source-run support (`python3 main.py`), you can publish:
-
-- `main.py`
-- `README.md`
-
-Optional (for nicer window icon):
-- `assets/icons/PrinterSupplyTrayMonitor-256.png`
-
-If the icon file is missing, the app still runs.
+2. Click `Refresh Now'
 
 ## Data Storage (Portable)
 
