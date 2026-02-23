@@ -1,90 +1,132 @@
-# WepaAPP
-A desktop app for monitoring printer supplies and tray status from a web dashboard.
+# Printer Key Checkout Tracker
 
-## Features
+Cross-platform Tkinter desktop app for sandbox IT key checkout/return tracking.
 
-- Detects low toner/ink/drum/belt/fuser conditions
-- Detects empty trays
-- Classifies printers by service desk:
-  - `Pattee Library Service Desk`
-  - `Pollock Service Desk`
-  - `Findlay Service Desk`
-- Served-by filter for dashboard, alert history, and CSV export
-- Tracks tray empty/filled history and low-supply alert lifecycle history
-- Exports full alert history to CSV (tray + low-supply events)
-- Generates copyable ServiceNow worknotes
-- Generates copyable ServiceNow ticket descriptions
-- Generates copyable printer-keys chat jokes (with occasional CS-major jokes)
-- Sends native notifications on macOS, Windows, and Linux (when available)
-- Includes macOS/Windows menu-bar summary views via app menu
-- Includes a sleek minimal app icon for packaged builds
+This build uses Google OAuth + Google Drive API (personal Gmail compatible).
+
+Credits: Jack Shetterly
+
+## Authentication Model
+
+- Users sign in with Google in a browser window.
+- Required first-run inputs:
+  - Google OAuth Desktop App Client ID
+  - Google OAuth Desktop App Client Secret
+  - Shared Google Drive folder URL (or folder ID)
+- Token cache and settings are stored in per-user app data (not in project folder).
+
+## Google Drive Storage Layout
+
+Inside the configured Drive folder, the app creates/uses:
+
+```text
+<drive folder>/
+  logs/
+    <userid>_events.csv
+  output/
+    keylog_aggregate.xlsx
+```
+
+CSV columns:
+`EventId, Timestamp, UserId, Action, KeyId, FromLocation, ToLocation, PrinterOrDestination, ReturnedToLocation, Notes`
 
 ## Runtime Requirements
 
-- Python 3.10+ (tested on 3.12)
-- Tkinter available in your Python distribution (the app attempts a one-time auto-install if missing)
+- Python 3.10+
+- `google-api-python-client`
+- `google-auth-oauthlib`
+- `google-auth-httplib2`
+- `openpyxl`
 
-No third-party Python dependencies are required to run from source.
-
-## Run From Source
-
-```bash
-python3 main.py
-```
-
-On first launch:
-1. Paste your monitor URL into the `Monitor URL` field.
-2. Click `Refresh Now`.
-
-## Alert History
-
-The `Alert History` tab includes:
-- Empty tray events (`empty`, `filled`)
-- Low-supply lifecycle events (`low_open`, `low_update`, `low_resolved`)
-
-Double-click any current low-supply or empty-tray alert to open a generated incident report with recommended resolution steps.
-
-## Data Storage (Portable)
-
-The app stores state in a user-local app-data directory (not hardcoded machine paths):
-
-- macOS: `~/Library/Application Support/printer_supply_tray_monitor/printer_monitor_state.json`
-- Windows: `%APPDATA%\printer_supply_tray_monitor\printer_monitor_state.json`
-- Linux: `${XDG_DATA_HOME:-~/.local/share}/printer_supply_tray_monitor/printer_monitor_state.json`
-
-## Build Installers
-
-Build scripts are included for:
-
-- macOS `.pkg` + `.dmg` (installs to `/Applications`)
-- Windows portable `.exe` + setup `.exe` (if Inno Setup is installed)
-
-Install build dependency:
+Install:
 
 ```bash
-python3 -m pip install -r requirements-build.txt
+python3 -m pip install -r requirements.txt
 ```
 
-### macOS
+## Run
+
+macOS/Linux:
 
 ```bash
-./packaging/build_macos_dmg.sh 1.0.0
+./run_mac_linux.sh
 ```
 
-Output:
-- `release/macos/PrinterSupplyTrayMonitor-1.0.0.pkg`
-- `release/macos/PrinterSupplyTrayMonitor-1.0.0.dmg`
-
-### Windows (run on Windows)
+Windows (PowerShell):
 
 ```powershell
-.\packaging\build_windows_exe.ps1 -Version 1.0.0
+.\run_windows.bat
+```
+
+Direct run (advanced):
+
+```bash
+python3 app.py
+```
+
+## Startup Flow
+
+1. Enter Google OAuth Client ID.
+2. Enter Google OAuth Client Secret.
+3. Enter shared Google Drive folder URL (or folder ID).
+4. Complete Google sign-in in browser.
+5. Enter session UserId.
+
+Optional environment overrides:
+- `KEY_TRACKER_GOOGLE_CLIENT_ID`
+- `KEY_TRACKER_GOOGLE_CLIENT_SECRET`
+- `KEY_TRACKER_GOOGLE_FOLDER_URL`
+- `KEY_TRACKER_GOOGLE_FOLDER_ID`
+
+## Logic Rules
+
+- Event logs are append-only per-user CSV files.
+- Double-checkout is blocked based on latest key state.
+- Return for key not currently OUT requires confirmation.
+- `What's Out` scans all CSV logs and computes latest event by `KeyId`.
+- Malformed CSV rows are skipped and surfaced as warnings.
+
+## Export
+
+Export writes to Google Drive:
+- `output/keylog_aggregate.xlsx`
+
+Sheets:
+- `RawEvents`
+- `WhatsOut` (`KeyId`, `CheckedOutBy`, `TimeOut`, `ToLocation`, `PrinterOrDestination`)
+
+## macOS DMG Build
+
+Build app + DMG:
+
+```bash
+./build_macos_dmg.sh
 ```
 
 Output:
-- `release\windows\PrinterSupplyTrayMonitor-1.0.0.exe` (portable)
-- `release\windows\PrinterSupplyTrayMonitor-1.0.0-setup.exe` (installer, if Inno Setup is present)
+- `dist/Printer Key Checkout Tracker.app`
+- `dist/PrinterKeyCheckoutTracker-macOS.dmg`
 
-## Credits
+## Portable Python Zip (Cross-Machine Source Bundle)
 
-Credits: Jack Shetterly
+Create a distributable source zip:
+
+```bash
+./build_portable_zip.sh
+```
+
+Output:
+- `release/PrinterKeyCheckoutTracker-python-portable.zip`
+
+The zip includes only portable runtime files:
+- `app.py`, `storage.py`, `models.py`, `utils.py`
+- `requirements.txt`
+- `README.md`
+- `run_mac_linux.sh`, `run_windows.bat`
+- `resources/AppIcon-256.png`
+
+The release zip includes:
+- Core app files (`app.py`, `storage.py`, `models.py`, `utils.py`)
+- Run scripts (`run_mac_linux.sh`, `run_windows.bat`)
+- Build scripts (`build_portable_zip.sh`, `build_github_release_zip.sh`)
+- `requirements.txt`, `README.md`, icon asset, and wiki docs (`docs/wiki`)
